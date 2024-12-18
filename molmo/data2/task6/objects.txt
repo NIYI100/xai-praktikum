@@ -1,0 +1,1 @@
+["can", "top left of the burner", "bottom left of the burner", "the can on the top left of the burner"]
