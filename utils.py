@@ -1,0 +1,115 @@
+from PIL import Image
+import requests
+import torch
+import os
+import matplotlib.pyplot as plt
+import re
+from ast import literal_eval
+import numpy as np
+
+def extract_tasks_and_images(path_to_directory):
+    tasks = []
+    images = []
+
+    for experiment in os.listdir(path_to_directory):
+        if experiment.startswith("."):
+            continue
+        subdir_path = os.path.join(path_to_directory, experiment)
+        task_file_path = os.path.join(subdir_path, "lang.txt")
+
+        # Get Task
+        with open(task_file_path, "r") as lang_file:
+            task = lang_file.read()
+            tasks.append(task)
+
+        # Get image
+        for file in os.listdir(subdir_path):
+                    if file.startswith("im_") and file.endswith((".png", ".jpg", ".jpeg")):
+                        image_path = os.path.join(subdir_path, file)
+                        image = Image.open(image_path)
+                        images.append(image)
+
+    return tasks, images 
+
+def extract_all(path_to_directory):
+    tasks = []
+    images = []
+    objects_list = []
+    groundtruths = []
+
+    for experiment in os.listdir(path_to_directory):
+        if experiment.startswith("."):
+            continue
+
+        subdir_path = os.path.join(path_to_directory, experiment)
+        task_file_path = os.path.join(subdir_path, "lang.txt")
+        objects_file_path = os.path.join(subdir_path, "objects.txt")
+        groundtruth_file_path = os.path.join(subdir_path, "groundtruth.txt")
+
+        # Get Task
+        with open(task_file_path, "r") as lang_file:
+            task = lang_file.read()
+            tasks.append(task)
+
+        with open(objects_file_path, "r") as lang_file:
+            content = lang_file.read().strip()
+            if content:  # Check if the file is not empty
+                objects = json.loads(content)
+            else:
+                objects = []
+            objects_list.append(objects)
+
+        # Get Groundtruth
+        with open(groundtruth_file_path, "r") as gt_file:
+            line = gt_file.read().strip()
+            groundtruth = literal_eval(line)  # Safely evaluate the string as a Python literal
+            groundtruths.append(groundtruth)
+
+        # Get image
+        for file in os.listdir(subdir_path):
+                    if file.startswith("im_") and file.endswith((".png", ".jpg", ".jpeg")):
+                        image_path = os.path.join(subdir_path, file)
+                        image = Image.open(image_path)
+                        images.append(image)
+
+    return tasks, images, groundtruths, objects_list
+
+def visualize_points_on_image(image, labels, list_of_coordinates, title="Coordinates on Image"):
+    plt.imshow(image, alpha=1)
+    image_width, image_height = image.size
+
+    for label, coordinates in zip(labels, list_of_coordinates):
+        # Extract and plot the points
+        x_coords = [x for x, y in coordinates]
+        y_coords = [y for x, y in coordinates]
+        plt.scatter(x_coords, y_coords, marker='o', label=label)
+    
+    # Add labels and show the plot
+    plt.title(title)
+    plt.legend(loc="lower right")
+    plt.axis("on")  # Show axes
+    plt.show()
+    plt.close()
+
+def plot_euclidean_bplot(labels, list_of_coordinates, ground_truths, title="Boxplot"):
+    data = []
+    for i in range(len(labels)):
+        distances = []
+        ground_truth = ground_truths[i]
+        coordinates = list_of_coordinates[i]
+        for point in coordinates:
+            euc_dist = np.sqrt(np.square(ground_truth[0] - point[0]) + np.square(ground_truth[1] - point[1]))
+            distances.append(euc_dist)
+        data.append(distances)
+
+    # Create the boxplots side by side
+    plt.boxplot(data)
+    plt.xticks(np.arange(1, len(labels) + 1), labels)  # Set x-axis labels
+    plt.ylabel('Euclidean distance from ground truth')
+    plt.title('Euclidean Distance Boxplots')
+    plt.show()
+    plt.close()
+
+def plot_loglikelihood_bplot():
+    raise NotImplementedError
+    
