@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import re
 from ast import literal_eval
 import numpy as np
+import json
 
 def extract_tasks_and_images(path_to_directory):
     tasks = []
