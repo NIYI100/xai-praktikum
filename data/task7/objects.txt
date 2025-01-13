@@ -1,1 +1,0 @@
-["broccoli", "between the two right burners"]
