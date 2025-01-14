@@ -1,6 +1,7 @@
 from transformers import AutoModelForCausalLM, AutoProcessor, GenerationConfig
 import torch
 import re
+from PIL import Image
 
 
 def load_model(model_name):
@@ -21,22 +22,23 @@ def load_model(model_name):
     return model, processor
 
 def do_inference(image, prompt, model, processor, temperature=0.2):
-    inputs = processor.process(
-        images=image,
-        text=prompt
-    )
-    inputs = {k: v.to(model.device).unsqueeze(0) for k, v in inputs.items()}
-    with torch.autocast(device_type="cuda", enabled=True, dtype=torch.bfloat16):
-            # Generate output
-            output = model.generate_from_batch(
-                inputs,
-                GenerationConfig(max_new_tokens=200, stop_strings="<|endoftext|>", temperature=temperature, do_sample=True),
-                tokenizer=processor.tokenizer,
-                return_dict_in_generate=True,
-                output_logits=True
-            )
-    output_text = _generate_output_text(output, inputs, processor)
-    return output_text
+    with Image.open(image) as image:
+        inputs = processor.process(
+            images=image,
+            text=prompt
+        )
+        inputs = {k: v.to(model.device).unsqueeze(0) for k, v in inputs.items()}
+        with torch.autocast(device_type="cuda", enabled=True, dtype=torch.bfloat16):
+                # Generate output
+                output = model.generate_from_batch(
+                    inputs,
+                    GenerationConfig(max_new_tokens=200, stop_strings="<|endoftext|>", temperature=temperature, do_sample=True),
+                    tokenizer=processor.tokenizer,
+                    return_dict_in_generate=True,
+                    output_logits=True
+                )
+        output_text = _generate_output_text(output, inputs, processor)
+        return output_text
 
 def get_coordinates(output_text, width, height):
     pattern = r"\(([^,]+), ([^\)]+)\)"

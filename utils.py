@@ -27,8 +27,8 @@ def extract_tasks_and_images(path_to_directory):
         for file in os.listdir(subdir_path):
                     if file.startswith("im_") and file.endswith((".png", ".jpg", ".jpeg")):
                         image_path = os.path.join(subdir_path, file)
-                        image = Image.open(image_path)
-                        images.append(image)
+                        #image = Image.open(image_path)
+                        images.append(image_path)
 
     return tasks, images 
 
@@ -70,8 +70,8 @@ def extract_all(path_to_directory):
         for file in os.listdir(subdir_path):
                     if file.startswith("im_") and file.endswith((".png", ".jpg", ".jpeg")):
                         image_path = os.path.join(subdir_path, file)
-                        image = Image.open(image_path)
-                        images.append(image)
+                        #image = Image.open(image_path)
+                        images.append(image_path)
 
     return tasks, images, groundtruths, objects_list
 
@@ -120,28 +120,29 @@ def extract_all_trajectories(path_to_directory):
         image_trajectory = []
         for file in sorted(pictures, key=lambda x: int(x.split('.')[0])):
             image_path = os.path.join(subdir_path, file)
-            image = Image.open(image_path)
-            image_trajectory.append(image)
+            #image = Image.open(image_path)
+            image_trajectory.append(image_path)
         images.append(image_trajectory)
             
     return tasks, images, groundtruths, objects_list
 
-def visualize_points_on_image(image, labels, list_of_coordinates, title="Coordinates on Image"):
-    plt.imshow(image, alpha=1)
-    image_width, image_height = image.size
-
-    for label, coordinates in zip(labels, list_of_coordinates):
-        # Extract and plot the points
-        x_coords = [x for x, y in coordinates]
-        y_coords = [y for x, y in coordinates]
-        plt.scatter(x_coords, y_coords, marker='o', label=label)
+def visualize_points_on_image(image_path, labels, list_of_coordinates, title="Coordinates on Image"):
+    with Image.open(image_path) as image:
+        plt.imshow(image, alpha=1)
+        image_width, image_height = image.size
     
-    # Add labels and show the plot
-    plt.title(title)
-    plt.legend(loc="lower right")
-    plt.axis("on")  # Show axes
-    plt.show()
-    plt.close()
+        for label, coordinates in zip(labels, list_of_coordinates):
+            # Extract and plot the points
+            x_coords = [x for x, y in coordinates]
+            y_coords = [y for x, y in coordinates]
+            plt.scatter(x_coords, y_coords, marker='o', label=label)
+        
+        # Add labels and show the plot
+        plt.title(title)
+        plt.legend(loc="lower right")
+        plt.axis("on")  # Show axes
+        plt.show()
+        plt.close()
 
 def plot_euclidean_bplot(labels, list_of_coordinates, ground_truths, title="Euclidean Distance Boxplots"):
     data = []
@@ -164,4 +165,20 @@ def plot_euclidean_bplot(labels, list_of_coordinates, ground_truths, title="Eucl
 
 def plot_loglikelihood_bplot():
     raise NotImplementedError
+
+def close_all_images(root_dir):
+    closed_images = 0
+    # Walk through all subdirectories and files in the given root directory
+    for subdir, _, files in os.walk(root_dir):
+        for file in files:
+            # Check if the file is an image based on its extension
+            if file.lower().endswith((".png", ".jpg", ".jpeg", ".bmp", ".gif")):
+                image_path = os.path.join(subdir, file)
+                try:
+                    image = Image.open(image_path)
+                    image.close()
+                    closed_images += 1
+                except Exception as e:
+                    print(f"Error processing image {image_path}: {e}")
+    print(f"Found and closed {closed_images} images.")
     
