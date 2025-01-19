@@ -7,6 +7,7 @@ import re
 from ast import literal_eval
 import numpy as np
 import json
+import math
 
 def extract_tasks_and_images(path_to_directory):
     tasks = []
@@ -126,23 +127,22 @@ def extract_all_trajectories(path_to_directory):
             
     return tasks, images, groundtruths, objects_list
 
-def visualize_points_on_image(image_path, labels, list_of_coordinates, title="Coordinates on Image"):
-    with Image.open(image_path) as image:
-        plt.imshow(image, alpha=1)
-        image_width, image_height = image.size
+def visualize_points_on_image(image, labels, list_of_coordinates, title="Coordinates on Image"):
+    plt.imshow(image, alpha=1)
+    image_width, image_height = image.size
+
+    for label, coordinates in zip(labels, list_of_coordinates):
+        # Extract and plot the points
+        x_coords = [x for x, y in coordinates]
+        y_coords = [y for x, y in coordinates]
+        plt.scatter(x_coords, y_coords, marker='o', label=label)
     
-        for label, coordinates in zip(labels, list_of_coordinates):
-            # Extract and plot the points
-            x_coords = [x for x, y in coordinates]
-            y_coords = [y for x, y in coordinates]
-            plt.scatter(x_coords, y_coords, marker='o', label=label)
-        
-        # Add labels and show the plot
-        plt.title(title)
-        plt.legend(loc="lower right")
-        plt.axis("on")  # Show axes
-        plt.show()
-        plt.close()
+    # Add labels and show the plot
+    plt.title(title)
+    plt.legend(loc="lower right")
+    plt.axis("on")  # Show axes
+    plt.show()
+    plt.close()
 
 def plot_euclidean_bplot(labels, list_of_coordinates, ground_truths, title="Euclidean Distance Boxplots"):
     data = []
@@ -151,7 +151,7 @@ def plot_euclidean_bplot(labels, list_of_coordinates, ground_truths, title="Eucl
         ground_truth = ground_truths[i]
         coordinates = list_of_coordinates[i]
         for point in coordinates:
-            euc_dist = np.sqrt(np.square(ground_truth[0] - point[0]) + np.square(ground_truth[1] - point[1]))
+            euc_dist = calculate_euclidian_distance(ground_truth, point)
             distances.append(euc_dist)
         data.append(distances)
 
@@ -163,8 +163,30 @@ def plot_euclidean_bplot(labels, list_of_coordinates, ground_truths, title="Eucl
     plt.show()
     plt.close()
 
+
 def plot_loglikelihood_bplot():
     raise NotImplementedError
+
+
+"""
+labels: One label per task
+list_of_probs: [[task1_prob1, task1_prob2], [task2_prob1, task2_prob2], ...]
+list_of_distances: [[task1_dist1, task1_diat2], [task2_dist1, task2_dist2], ...]
+"""
+def plot_scatter(labels, list_of_probs, list_of_distances, title="Scatterplot"):
+    for label, probs, distances in zip(labels, list_of_probs, list_of_distances):
+        plt.scatter(distances, probs, marker='o', label=label)
+    
+    # Adding labels
+    plt.xlabel('Distance to Groundtruth')
+    plt.ylabel('Probabilities')
+    plt.title(title)
+    plt.legend(loc=(1.04, 0))
+    
+    # Show the plot
+    plt.show()
+    plt.close()
+
 
 def close_all_images(root_dir):
     closed_images = 0
@@ -181,4 +203,10 @@ def close_all_images(root_dir):
                 except Exception as e:
                     print(f"Error processing image {image_path}: {e}")
     print(f"Found and closed {closed_images} images.")
+
+def calculate_euclidian_distance(coord1, coord2):
+    x1, y1 = coord1
+    x2, y2 = coord2
+    distance = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+    return distance
     
