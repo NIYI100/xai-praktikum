@@ -84,7 +84,7 @@ def do_inference_with_logits(image, prompt, model, processor, tokenizer, tempera
     
     return generated_text, outputs
 
-def calculate_probs_per_coordinate(outputs, coordinate_size = 14):
+def calculate_probs_per_coordinate(outputs, ignoreDecimalPlaces = False, coordinate_size = 14):
     generated_ids = outputs.sequences
 
     logits = outputs.logits
@@ -98,11 +98,14 @@ def calculate_probs_per_coordinate(outputs, coordinate_size = 14):
     products = []
     
     # Iterate over logit_probs in chunks of 14
-    for i in range(0, len(highest_probs), coordinate_size):
+    for i in range(0, len(highest_probs) - 1, coordinate_size):
         chunk = highest_probs[i:i+coordinate_size]  # Get the chunk of 14 elements
-        product = math.prod(chunk)   # Calculate the product of the chunk
+        if ignoreDecimalPlaces:
+            product = chunk[3] * chunk[10] #Calculate first number for x and y value
+        else:
+            product = math.prod(chunk)   # Calculate the product of the chunk
         products.append(product)     # Append the result to the products list
-
+        
     return products
 
 def get_coordinates(coord_string, image_width, image_height):
