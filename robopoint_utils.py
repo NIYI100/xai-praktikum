@@ -49,7 +49,7 @@ def do_inference(image, prompt, model, processor, tokenizer, temperature=0.2):
             #image_sizes=[image.size],
             do_sample=True,
             temperature=temperature,
-            max_new_tokens=1024,
+            max_new_tokens=256,
             use_cache=True)
     
     # only get generated tokens; decode them to text
@@ -73,7 +73,7 @@ def do_inference_with_logits(image, prompt, model, processor, tokenizer, tempera
             #image_sizes=[image.size],
             do_sample=True,
             temperature=temperature,
-            max_new_tokens=1024,
+            max_new_tokens=256,
             output_logits=True,
             return_dict_in_generate=True,
             use_cache=True)
@@ -99,6 +99,8 @@ def calculate_probs_per_coordinate(outputs, ignoreDecimalPlaces = False, coordin
     
     # Iterate over logit_probs in chunks of 14
     for i in range(0, len(highest_probs) - 1, coordinate_size):
+        if i + coordinate_size > len(highest_probs) - 1:
+            break
         chunk = highest_probs[i:i+coordinate_size]  # Get the chunk of 14 elements
         if ignoreDecimalPlaces:
             product = chunk[3] * chunk[10] #Calculate first number for x and y value
