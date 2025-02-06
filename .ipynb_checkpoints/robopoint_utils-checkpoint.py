@@ -34,59 +34,57 @@ def generate_prompt(prompt_objective, prompt_start=PROMPT_START, prompt_output_f
     conv.append_message(conv.roles[1], None)
     return conv.get_prompt()
 
-def do_inference(image_path, prompt, model, processor, tokenizer, temperature=0.2):
-    with Image.open(image_path) as image:
-        # prepare inputs for the model
-        input_ids = tokenizer_image_token(prompt, tokenizer, -200, return_tensors='pt').unsqueeze(0).cuda()
-        
-        # prepare image input
-        image_tensor = process_images([image], processor, model.config)[0].unsqueeze(0).half().cuda()
-        
-        # autoregressively generate text
-        with torch.no_grad():
-            output_ids = model.generate(
-                input_ids,
-                images=image_tensor,
-                #image_sizes=[image.size],
-                do_sample=True,
-                temperature=temperature,
-                max_new_tokens=1024,
-                use_cache=True)
-        
-        # only get generated tokens; decode them to text
-        output = tokenizer.batch_decode(output_ids, skip_special_tokens=True)[0].strip()
-        
-        return output
-
-
-def do_inference_with_logits(image_path, prompt, model, processor, tokenizer, temperature=0.2):
-    with Image.open(image_path) as image:
-        # prepare inputs for the model
-        input_ids = tokenizer_image_token(prompt, tokenizer, -200, return_tensors='pt').unsqueeze(0).cuda()
-        
-        # prepare image input
-        image_tensor = process_images([image], processor, model.config)[0].unsqueeze(0).half().cuda()
-        
-        # autoregressively generate text
-        with torch.no_grad():
-            outputs = model.generate(
-                input_ids,
-                images=image_tensor,
-                #image_sizes=[image.size],
-                do_sample=True,
-                temperature=temperature,
-                max_new_tokens=1024,
-                output_logits=True,
-                return_dict_in_generate=True,
-                use_cache=True)
+def do_inference(image, prompt, model, processor, tokenizer, temperature=0.2):
+    # prepare inputs for the model
+    input_ids = tokenizer_image_token(prompt, tokenizer, -200, return_tensors='pt').unsqueeze(0).cuda()
     
-        # Extract generated IDs and scores
-        generated_ids = outputs.sequences
-        generated_text = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
-        
-        return generated_text, outputs
+    # prepare image input
+    image_tensor = process_images([image], processor, model.config)[0].unsqueeze(0).half().cuda()
+    
+    # autoregressively generate text
+    with torch.no_grad():
+        output_ids = model.generate(
+            input_ids,
+            images=image_tensor,
+            #image_sizes=[image.size],
+            do_sample=True,
+            temperature=temperature,
+            max_new_tokens=256,
+            use_cache=True)
+    
+    # only get generated tokens; decode them to text
+    output = tokenizer.batch_decode(output_ids, skip_special_tokens=True)[0].strip()
+    
+    return output
 
-def calculate_probs_per_coordinate(outputs, coordinate_size = 14):
+
+def do_inference_with_logits(image, prompt, model, processor, tokenizer, temperature=0.2):
+    # prepare inputs for the model
+    input_ids = tokenizer_image_token(prompt, tokenizer, -200, return_tensors='pt').unsqueeze(0).cuda()
+    
+    # prepare image input
+    image_tensor = process_images([image], processor, model.config)[0].unsqueeze(0).half().cuda()
+    
+    # autoregressively generate text
+    with torch.no_grad():
+        outputs = model.generate(
+            input_ids,
+            images=image_tensor,
+            #image_sizes=[image.size],
+            do_sample=True,
+            temperature=temperature,
+            max_new_tokens=256,
+            output_logits=True,
+            return_dict_in_generate=True,
+            use_cache=True)
+
+    # Extract generated IDs and scores
+    generated_ids = outputs.sequences
+    generated_text = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
+    
+    return generated_text, outputs
+
+def calculate_probs_per_coordinate(outputs, ignoreDecimalPlaces = False, coordinate_size = 14):
     generated_ids = outputs.sequences
 
     logits = outputs.logits
@@ -100,11 +98,16 @@ def calculate_probs_per_coordinate(outputs, coordinate_size = 14):
     products = []
     
     # Iterate over logit_probs in chunks of 14
-    for i in range(0, len(highest_probs), coordinate_size):
+    for i in range(0, len(highest_probs) - 1, coordinate_size):
+        if i + coordinate_size > len(highest_probs) - 1:
+            break
         chunk = highest_probs[i:i+coordinate_size]  # Get the chunk of 14 elements
-        product = math.prod(chunk)   # Calculate the product of the chunk
+        if ignoreDecimalPlaces:
+            product = chunk[3] * chunk[10] #Calculate first number for x and y value
+        else:
+            product = math.prod(chunk)   # Calculate the product of the chunk
         products.append(product)     # Append the result to the products list
-
+        
     return products
 
 def get_coordinates(coord_string, image_width, image_height):

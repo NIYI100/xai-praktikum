@@ -209,4 +209,9 @@ def calculate_euclidian_distance(coord1, coord2):
     x2, y2 = coord2
     distance = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
     return distance
+
+def calculate_normalized_euclidian_distance(coord1, coord2, width, height):
+    norm1 = (coord1[0] / width, coord1[1] / height)
+    norm2 = (coord2[0] / width, coord2[1] / height)
+    return calculate_euclidian_distance(norm1, norm2)
     
