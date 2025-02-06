@@ -8,6 +8,7 @@ from ast import literal_eval
 import numpy as np
 import json
 import math
+import itertools
 
 def extract_tasks_and_images(path_to_directory):
     tasks = []
@@ -173,13 +174,13 @@ labels: One label per task
 list_of_probs: [[task1_prob1, task1_prob2], [task2_prob1, task2_prob2], ...]
 list_of_distances: [[task1_dist1, task1_diat2], [task2_dist1, task2_dist2], ...]
 """
-def plot_scatter(labels, list_of_probs, list_of_distances, title="Scatterplot"):
+def plot_scatter(labels, list_of_probs, list_of_distances, title="Scatterplot", x_label="Distance to Groundtruth", y_label="Probabilities"):
     for label, probs, distances in zip(labels, list_of_probs, list_of_distances):
         plt.scatter(distances, probs, marker='o', label=label)
     
     # Adding labels
-    plt.xlabel('Distance to Groundtruth')
-    plt.ylabel('Probabilities')
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
     plt.title(title)
     plt.legend(loc=(1.04, 0))
     
@@ -214,4 +215,15 @@ def calculate_normalized_euclidian_distance(coord1, coord2, width, height):
     norm1 = (coord1[0] / width, coord1[1] / height)
     norm2 = (coord2[0] / width, coord2[1] / height)
     return calculate_euclidian_distance(norm1, norm2)
+
+def calculate_spread(coordinates, width, height):
+    max_dist = 0
+    len_coords = len(coordinates)
+    
+    for i in range(len_coords):
+        for j in range(len_coords):
+            spread = calculate_normalized_euclidian_distance(coordinates[i], coordinates[j], width, height)
+            if (spread > max_dist):
+                max_dist = spread
+    return max_dist
     
