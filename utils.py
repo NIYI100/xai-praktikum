@@ -174,13 +174,13 @@ labels: One label per task
 list_of_probs: [[task1_prob1, task1_prob2], [task2_prob1, task2_prob2], ...]
 list_of_distances: [[task1_dist1, task1_diat2], [task2_dist1, task2_dist2], ...]
 """
-def plot_scatter(labels, list_of_probs, list_of_distances, title="Scatterplot"):
+def plot_scatter(labels, list_of_probs, list_of_distances, title="Scatterplot", x_label="Distance to Groundtruth", y_label="Probabilities"):
     for label, probs, distances in zip(labels, list_of_probs, list_of_distances):
         plt.scatter(distances, probs, marker='o', label=label)
     
     # Adding labels
-    plt.xlabel('Distance to Groundtruth')
-    plt.ylabel('Probabilities')
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
     plt.title(title)
     plt.legend(loc=(1.04, 0))
     
