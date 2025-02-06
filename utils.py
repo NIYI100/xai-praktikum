@@ -8,6 +8,7 @@ from ast import literal_eval
 import numpy as np
 import json
 import math
+import itertools
 
 def extract_tasks_and_images(path_to_directory):
     tasks = []
@@ -214,4 +215,15 @@ def calculate_normalized_euclidian_distance(coord1, coord2, width, height):
     norm1 = (coord1[0] / width, coord1[1] / height)
     norm2 = (coord2[0] / width, coord2[1] / height)
     return calculate_euclidian_distance(norm1, norm2)
+
+def calculate_spread(coordinates, width, height):
+    max_dist = 0
+    len_coords = len(coordinates)
+    
+    for i in range(len_coords):
+        for j in range(len_coords):
+            spread = calculate_normalized_euclidian_distance(coordinates[i], coordinates[j], width, height)
+            if (spread > max_dist):
+                max_dist = spread
+    return max_dist
     
