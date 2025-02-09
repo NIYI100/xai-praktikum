@@ -8,6 +8,9 @@ from ast import literal_eval
 import numpy as np
 import json
 import math
+import itertools
+from sklearn.cluster import DBSCAN
+from scipy.spatial.distance import pdist
 
 def extract_tasks_and_images(path_to_directory):
     tasks = []
@@ -173,13 +176,13 @@ labels: One label per task
 list_of_probs: [[task1_prob1, task1_prob2], [task2_prob1, task2_prob2], ...]
 list_of_distances: [[task1_dist1, task1_diat2], [task2_dist1, task2_dist2], ...]
 """
-def plot_scatter(labels, list_of_probs, list_of_distances, title="Scatterplot"):
+def plot_scatter(labels, list_of_probs, list_of_distances, title="Scatterplot", x_label="Distance to Groundtruth", y_label="Probabilities"):
     for label, probs, distances in zip(labels, list_of_probs, list_of_distances):
         plt.scatter(distances, probs, marker='o', label=label)
     
     # Adding labels
-    plt.xlabel('Distance to Groundtruth')
-    plt.ylabel('Probabilities')
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
     plt.title(title)
     plt.legend(loc=(1.04, 0))
     
@@ -214,4 +217,68 @@ def calculate_normalized_euclidian_distance(coord1, coord2, width, height):
     norm1 = (coord1[0] / width, coord1[1] / height)
     norm2 = (coord2[0] / width, coord2[1] / height)
     return calculate_euclidian_distance(norm1, norm2)
+
+def calculate_spread(coordinates, width, height):
+    max_dist = 0
+    for i in range(len(coordinates)):
+        for j in range(i + 1, len(coordinates)):
+            dist = calculate_normalized_euclidian_distance(coordinates[i], coordinates[j], width, height)
+            max_dist = max(max_dist, dist)
     
+    return max_dist
+
+
+def cluster_data(coordinates, epsilon=10, min_samples=3):
+    coordinates = np.array(coordinates)
+    db = DBSCAN(eps=epsilon, min_samples=min_samples).fit(coordinates)
+    labels = db.labels_
+
+    # Calculate number of clusters
+    n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
+
+    if (n_clusters == 0):
+        print("Didnt find any cluster")
+        return n_clusters, 0, 0, 0, 0
+    else:    
+        # Calculate majority_cluster
+        unique_labels, counts = np.unique(labels[labels != -1], return_counts=True)
+        majority_label = unique_labels[np.argmax(counts)]
+        majority_cluster_points = coordinates[labels == majority_label]
+
+        # Calculate noisy points
+        noisy_majority_points = coordinates[labels == -1]
+
+        # Calculate centroid and diameter of majority cluster
+        centroid = np.mean(majority_cluster_points, axis=0)
+        diameter = np.max(pdist(majority_cluster_points)) if len(majority_cluster_points) > 1 else 0
+
+        # Calculate number of noisy points
+        n_noise = len(noisy_majority_points)
+        
+        # Print results
+        print(f"Number of clusters: {n_clusters}")
+        print(f"Number of noisy points: {n_noise}")
+        print(f"Centroid of majority cluster: {centroid}")
+        print(f"Diameter of majority cluster: {diameter}") 
+
+        return n_clusters, majority_cluster_points, noisy_majority_points, centroid, diameter
+
+def show_cluster(image, majority_cluster_points, noisy_majority_points, centroid, diameter):  
+    plt.imshow(image, alpha=1)
+
+    # Plot majority cluster points
+    plt.scatter(majority_cluster_points[:, 0], majority_cluster_points[:, 1], c='blue', label='Majority Cluster')
+
+    # Plot noisy points 
+    plt.scatter(noisy_majority_points[:, 0], noisy_majority_points[:, 1], c='black', label='Noise', alpha=0.6)
+   
+    # Plot centroid
+    plt.scatter(centroid[0], centroid[1], c='red', marker='x', label='Centroid')
+
+    # Draw cluster boundary
+    circle = plt.Circle(centroid, diameter / 2, color='blue', fill=False, linestyle='dashed', linewidth=1)
+    plt.gca().add_patch(circle)
+
+    plt.legend()
+    plt.show()
+    plt.close()
