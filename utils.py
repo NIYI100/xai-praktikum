@@ -11,6 +11,8 @@ import math
 import itertools
 from sklearn.cluster import DBSCAN
 from scipy.spatial.distance import pdist
+from sklearn.metrics import roc_curve, auc
+
 
 def extract_tasks_and_images(path_to_directory):
     tasks = []
@@ -282,3 +284,42 @@ def show_cluster(image, majority_cluster_points, noisy_majority_points, centroid
     plt.legend()
     plt.show()
     plt.close()
+
+def calculate_roc_curve(decision_values, threshold, scores):
+    decision_values = np.array(decision_values)
+    y_true = []
+    for value in decision_values:
+        if (value < threshold):
+            y_true.append(1)
+        else:
+            y_true.append(0)
+    unique_classes = np.unique(y_true)
+    if len(unique_classes) < 2:
+        return None, None, 0, None
+    fpr, tpr, thresholds = roc_curve(y_true, scores)
+    roc_auc = auc(fpr, tpr)
+    return fpr, tpr, roc_auc, thresholds
+
+def plot_roc_curve(fpr, tpr, roc_auc, title = "Receiver Operating Characteristic (ROC) Curve for Distance-Based Classification"):
+    # Plot the ROC curve
+    plt.figure(figsize=(8, 6))
+    plt.plot(fpr, tpr, color="blue", lw=2, label=f'ROC Curve (AUC = {roc_auc:.2f})')
+    plt.plot([0, 1], [0, 1], color="grey", linestyle="--")  # Random classifier line
+    plt.xlabel("False Positive Rate (FPR)")
+    plt.ylabel("True Positive Rate (TPR)")
+    plt.title(title)
+    plt.legend(loc="lower right")
+    plt.show()
+
+def find_best_threshold(optimization_scores, target_scores):
+    # Generate 20 evenly spaced values from min to max
+    steps = np.linspace(np.array(optimization_scores).min(), np.array(optimization_scores).max(), 20)
+    
+    max_auc = 0
+    best_threshold = 0
+    for thresh in steps:
+        fpr, tpr, roc_auc, thresholds = calculate_roc_curve(optimization_scores, thresh, target_scores)
+        if (roc_auc > max_auc):
+            max_auc = roc_auc
+            best_threshold = thresh
+    return best_threshold
