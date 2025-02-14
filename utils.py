@@ -265,6 +265,71 @@ def cluster_data(coordinates, epsilon=10, min_samples=3):
 
         return n_clusters, majority_cluster_points, noisy_majority_points, centroid, diameter
 
+
+def calculate_all_clusters(coordinates, epsilon=10, min_samples=3):
+    coordinates = np.array(coordinates)
+    db = DBSCAN(eps=epsilon, min_samples=min_samples).fit(coordinates)
+    labels = db.labels_
+
+    # Calculate number of clusters
+    n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
+
+    if (n_clusters == 0):
+        print("Didnt find any cluster")
+        return n_clusters, 0, 0, 0, 0, 0
+    else:    
+        # Calculate majority_cluster
+        unique_labels, counts = np.unique(labels[labels != -1], return_counts=True)
+        index_majority_label = unique_labels[np.argmax(counts)]
+        list_of_cluster_points = []
+        centroids = []
+        diameters = []
+        for cluster_label in range(n_clusters):
+            cluster_points = coordinates[labels == cluster_label]
+            list_of_cluster_points.append(cluster_points)
+            centroids.append(np.mean(cluster_points, axis=0))
+            diameter = np.max(pdist(cluster_points)) if len(cluster_points) > 1 else 0
+            diameters.append(diameter)
+        # Calculate noisy points
+        noisy_points = coordinates[labels == -1]
+
+        return n_clusters, index_majority_label, list_of_cluster_points, noisy_points, centroids, diameters
+
+def show_all_clusters(image, index_majority_label, list_of_cluster_points, noisy_points, centroids, diameters):
+    majority_points = list_of_cluster_points[index_majority_label]
+    label_other_clusters_added = False  # Flag to track if label is added
+
+    plt.imshow(image, alpha=1)
+
+
+    # Plot noisy points 
+    plt.scatter(noisy_points[:, 0], noisy_points[:, 1], c='black', label='Noise')
+
+    # Plot all clusters
+    for i in range(len(list_of_cluster_points)):
+        cluster = list_of_cluster_points[i]
+        centroid = centroids[i]
+        diameter = diameters[i]
+        if (i == index_majority_label):
+            plt.scatter(cluster[:, 0], cluster[:, 1], c='blue', label='Majority Cluster')
+            plt.scatter(centroid[0], centroid[1], c='red', marker='x', label='Centroid')
+        else:
+            label = "Other Clusters" if not label_other_clusters_added else None
+            plt.scatter(cluster[:, 0], cluster[:, 1], c='green', label=label)
+            plt.scatter(centroid[0], centroid[1], c='red', marker='x')
+            label_other_clusters_added = True  # Set flag to True after first usage
+
+            # Plot centroid
+        
+    
+        # Draw cluster boundary
+        circle = plt.Circle(centroid, diameter / 2, color='blue', fill=False, linestyle='dashed', linewidth=1)
+        plt.gca().add_patch(circle)
+
+    plt.legend()
+    plt.show()
+    plt.close()
+
 def show_cluster(image, majority_cluster_points, noisy_majority_points, centroid, diameter):  
     plt.imshow(image, alpha=1)
 
