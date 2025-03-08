@@ -41,13 +41,15 @@ def do_inference(image, prompt, model, processor, temperature=0.2):
 
     
 def get_coordinates(output_text, width, height):
-    pattern = r"\(([^,]+), ([^\)]+)\)"
-    matches = re.findall(pattern, output_text)
-    coordinates = []
-
-    for x, y in matches:
-        coordinates.append(_scale_coordinates(x, y, width, height))
-    return coordinates
+    # Pattern matches two floats (including optional signs) separated by a comma
+    pattern = r"\(([+-]?\d+\.\d+),\s*([+-]?\d+\.\d+)\)"
+    match = re.search(pattern, output_text)
+    if match:
+        # Convert captured strings to floats
+        x, y = map(float, match.groups())
+        return _scale_coordinates(x, y, width, height)
+    else:
+        return (-1, -1)
 
 def refactor_coordinates_to_where_to_place(list_of_coordinates):
     object_to_move = []
