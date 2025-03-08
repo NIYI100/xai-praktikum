@@ -14,7 +14,7 @@ import math
 import os
 import re
 
-PROMPT_OUTPUT_FORMAT="Your answer should be formatted as a list of tuples, i.e. [(x1, y1), (x2, y2), ...], where each tuple contains the x and y coordinates of a point satisfying the conditions above. The coordinates should be between 0 and 1, indicating the normalized pixel locations of the points in the image. Output 3 coordinates."
+PROMPT_OUTPUT_FORMAT="Your answer should be formatted as a list of tuples, i.e. [(x1, y1), (x2, y2), ...], where each tuple contains the x and y coordinates of a point satisfying the conditions above. The coordinates should be between 0 and 1, indicating the normalized pixel locations of the points in the image."
 PROMPT_START="Locate several points within the vacant space for the following task: "
 
 def load_model(model_path="wentao-yuan/robopoint-v1-vicuna-v1.5-13b"):
