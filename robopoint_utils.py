@@ -113,9 +113,9 @@ def calculate_probs_per_coordinate(outputs, ignoreDecimalPlaces = False, coordin
 def get_coordinates(coord_string, image_width, image_height):
     # Find pattern: (x, y)
     pattern = r'\((\d+\.?\d*),\s*(\d+\.?\d*)\)'
-    match = re.search(pattern, coord_string)
+    matches = re.findall(pattern, coord_string)
     
-    coordinates = (float(x), float(y)) for x, y in matches
+    coordinates = [(float(x), float(y)) for x, y in matches]
     return _scale_coordinates(coordinates, image_width, image_height)
 
 def _scale_coordinates(coordinates, image_width, image_height):
